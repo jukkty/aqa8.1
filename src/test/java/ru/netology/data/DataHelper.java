@@ -38,12 +38,12 @@ public class DataHelper {
         String code;
     }
 
-    public static String getWrongVerificationCode() {
+    public static VerificationCode getWrongVerificationCode() {
         Faker faker = new Faker();
-        return faker.internet().password();
+        return new VerificationCode(faker.internet().password());
     }
 
-    public static String getVerificationCode() throws SQLException {
+    public static VerificationCode getVerificationCode() {
         String usersId = null;
         val idSQL = "SELECT id FROM app.users WHERE login = ?";
         try (val conn = getConnection();
@@ -54,6 +54,8 @@ public class DataHelper {
                     usersId = rs.getString("id");
                 }
             }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
         String code = null;
         val authSQL = "SELECT code FROM app.auth_codes ac WHERE user_id = ? ORDER by created DESC limit 1";
@@ -65,11 +67,13 @@ public class DataHelper {
                     code = rs.getString("code");
                 }
             }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
-        return code;
+        return new VerificationCode(code);
     }
 
-    public static String getStatus() throws SQLException {
+    public static String getStatus() {
         String status = null;
         val statusSQL = "select status from app.users u where login = ?";
         try (val conn = getConnection();
@@ -80,15 +84,36 @@ public class DataHelper {
                     status = rs.getString("status");
                 }
             }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
         return status;
     }
 
-    public static void cleanAuthCodes() throws SQLException {
+    public static void cleanDB() {
+        val deleteAuthCodes = "DELETE from auth_codes;";
+        val deleteCards = "DELETE from app.cards;";
+        val deleteUsers = "DELETE from app.users;";
+
+        try (val conn = getConnection();
+             val deleteAuthSt = conn.createStatement();
+             val deleteCardsStmt = conn.createStatement();
+             val deleteUsersStmt = conn.createStatement()) {
+            deleteAuthSt.executeUpdate(deleteAuthCodes);
+            deleteCardsStmt.executeUpdate(deleteCards);
+            deleteUsersStmt.executeUpdate(deleteUsers);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    public static void cleanAuth() {
         val deleteAuthCodes = "DELETE from auth_codes;";
         try (val conn = getConnection();
              val deleteAuthSt = conn.createStatement()) {
             deleteAuthSt.executeUpdate(deleteAuthCodes);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
 }

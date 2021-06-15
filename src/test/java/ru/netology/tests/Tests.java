@@ -1,14 +1,11 @@
 package ru.netology.tests;
 
 import lombok.val;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import ru.netology.data.DataHelper;
+import ru.netology.pages.DashboardPage;
 import ru.netology.pages.LoginPage;
 
-import java.sql.SQLException;
 
 import static com.codeborne.selenide.Selenide.open;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,21 +15,25 @@ public class Tests {
     @BeforeEach
     void setUp() {
         open("http:localhost:7777");
+        DataHelper.cleanAuth();
     }
 
     @AfterAll
-    static void theEnd() throws SQLException {
-        DataHelper.cleanAuthCodes();
+    static void cleanDB(){
+        DataHelper.cleanDB();
     }
+
 
     @Test
     @DisplayName("Должен логиниться в личный кабинет при валидных данных")
-    void shouldLogin() throws SQLException {
+    void shouldLogin() {
         val loginPage = new LoginPage();
         val authInfo = DataHelper.getAuthInfo();
         val verificationPage = loginPage.validLogin(authInfo);
-        val verificationCode = verificationPage.validCode();
-        verificationCode.checkIfEverythingFine();
+        val verificationCode = DataHelper.getVerificationCode();
+        verificationPage.validCode(verificationCode);
+        val dashboardPage = new DashboardPage();
+        dashboardPage.checkIfEverythingFine();
     }
 
     @Test
@@ -41,7 +42,8 @@ public class Tests {
         val loginPage = new LoginPage();
         val authInfo = DataHelper.getAuthInfo();
         val verificationPage = loginPage.validLogin(authInfo);
-        verificationPage.invalidCode();
+        val verificationCode = DataHelper.getWrongVerificationCode();
+        verificationPage.validCode(verificationCode);
         loginPage.error();
     }
 
@@ -56,7 +58,7 @@ public class Tests {
 
     @Test
     @DisplayName("Должен блокировать пользователя после ввода неверного пароля больше 3-х раз")
-    void shouldBeBlockedAfterThirdWrongAttempt() throws SQLException {
+    void shouldBeBlockedAfterThirdWrongAttempt() {
         val loginPage = new LoginPage();
         val authInfo = DataHelper.getWrongAuthInfo();
         loginPage.invalidLogin(authInfo);
